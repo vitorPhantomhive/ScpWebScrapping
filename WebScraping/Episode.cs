@@ -13,5 +13,7 @@ namespace WebScraping
         public string Directors { get; set; }
         public string WrittenBy { get; set; }
         public string Released { get; set; }
+
+        // adicionando linha para teste
     }
 }
