@@ -14,9 +14,5 @@ namespace WebScraping
         public string WrittenBy { get; set; }
         public string Released { get; set; }
 
-        // adicionando linha para teste
-
-
-        //RECEBA
     }
 }
