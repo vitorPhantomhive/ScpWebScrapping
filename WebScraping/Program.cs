@@ -10,66 +10,43 @@ namespace StaticWebScraping
 {
     public class Program
     {
-        public static void Main()
+        public static async void Main()
         {
-            try
+
+            //URL da página alvo
+            string url = "http://scp-pt-br.wikidot.com/scp-2176";
+            using (HttpClient client = new HttpClient())
             {
-                // URL da página alvo da Wikipedia
-                string url = "https://en.wikipedia.org/wiki/List_of_SpongeBob_SquarePants_episodes";
+                HttpResponseMessage response = await client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                string pageContent = await response.Content.ReadAsStringAsync();
 
-                var web = new HtmlWeb();
-                // Baixando a página alvo e analisando seu conteúdo HTML
-                var document = web.Load(url);
+                //carregar o conteúdo html na instancia de htmlDocument
+                HtmlDocument document = new HtmlDocument();
+                document.LoadHtml(pageContent);
 
-                // Selecionando os nós HTML de interesse
-                var nodes = document.DocumentNode.SelectNodes("//*[@id=\"mw-content-text\"]/div[1]/table/tbody/tr");
+                //selecionando o nó html de interesse
+                var pageContentNode = document.DocumentNode.SelectSingleNode("//*[@id='page-content']");
 
-                // Inicializando a lista de objetos que armazenará os dados raspados
-                List<Episode> episodes = new List<Episode>();
-
-                // Looping sobre os nós e extraindo dados deles
-                foreach (var node in nodes)
+                if(pageContentNode == null)
                 {
-                    var overallNumberNode = node.SelectSingleNode("th[1]");
-                    var titleNode = node.SelectSingleNode("td[2]");
-                    var directorsNode = node.SelectSingleNode("td[3]");
-                    var writtenByNode = node.SelectSingleNode("td[4]");
-                    var releasedNode = node.SelectSingleNode("td[5]");
-
-                    // Verifica se todos os nós necessários foram encontrados
-                    if (overallNumberNode != null && titleNode != null && directorsNode != null && writtenByNode != null && releasedNode != null)
-                    {
-                        episodes.Add(new Episode()
-                        {
-                            OverallNumber = HtmlEntity.DeEntitize(overallNumberNode.InnerText.Trim()),
-                            Title = HtmlEntity.DeEntitize(titleNode.InnerText.Trim()),
-                            Directors = HtmlEntity.DeEntitize(directorsNode.InnerText.Trim()),
-                            WrittenBy = HtmlEntity.DeEntitize(writtenByNode.InnerText.Trim()),
-                            Released = HtmlEntity.DeEntitize(releasedNode.InnerText.Trim())
-                        });
-                    }
+                    Console.WriteLine("Não foi possivel encontrar o nó page-content");
+                    return;
                 }
 
-                // Obtendo o diretório atual
-                string currentDirectory = Directory.GetCurrentDirectory();
-                Console.WriteLine("Diretório atual: " + currentDirectory);
+                //Inicializandoa lista de objetos que armazenará os dados raspados
+                List<SCP> scpItems = new List<SCP>();
 
-                // Definindo o caminho do arquivo CSV
-                string filePath = Path.Combine(currentDirectory, "output.csv");
+                var item = new SCP();
 
-                // Inicializando o arquivo CSV
-                using (var writer = new StreamWriter(filePath))
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                var itemNumberNode = pageContentNode.SelectSingleNode(".//p[strong[contains(text(), Item nº)]]");
+                if(itemNumberNode !=  null)
                 {
-                    // Populando o arquivo CSV
-                    csv.WriteRecords(episodes);
+                    item.ItemNumber = itemNumberNode.InnerText.Replace("Item nº", "").Trim();
                 }
 
-                Console.WriteLine("Arquivo CSV gerado com sucesso em: " + filePath);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ocorreu um erro: {ex.Message}");
+                Console.WriteLine(itemNumberNode);
+
             }
         }
     }
