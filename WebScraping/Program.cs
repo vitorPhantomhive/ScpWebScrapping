@@ -23,7 +23,7 @@ namespace StaticWebScraping
                 //selecionando o nó html de interesse
                 var pageContentNode = document.DocumentNode.SelectSingleNode("//*[@id='page-content']");
 
-                if(pageContentNode == null)
+                if (pageContentNode == null)
                 {
                     Console.WriteLine("Não foi possivel encontrar o nó page-content");
                     return;
@@ -35,29 +35,68 @@ namespace StaticWebScraping
                 var itemScp = new SCP();
                 //pegando os valores do html 
                 var itemNumberNode = pageContentNode.SelectSingleNode(".//p[strong[contains(text(),'Item nº')]]");
-                if(itemNumberNode !=  null)
+                if (itemNumberNode != null)
                 {
                     itemScp.ItemNumber = itemNumberNode.InnerText.Replace("Item nº", "").Trim();
                 }
                 var itemObjectClass = pageContentNode.SelectSingleNode(".//p[strong[contains(text(),'Classe do Objeto')]]");
-                if(itemObjectClass != null)
+                if (itemObjectClass != null)
                 {
                     itemScp.ObjectClass = itemObjectClass.InnerText.Replace("Classe do Objeto", "");
                 }
-                // Selecionar o nó do cabeçalho "Procedimentos Especiais de Contenção"
-                var proceduresHeaderNode = pageContentNode.SelectSingleNode(".//p[strong[contains(text(), 'Procedimentos Especiais de Contenção:')]]");
 
-                if (proceduresHeaderNode != null)
+                // Selecionar o nó do cabeçalho "Procedimentos Especiais de Contenção"
+                var proceduresHeaderNode = pageContentNode.SelectSingleNode(".//p[strong[contains(text(),'Procedimentos Especiais de Contenção')]]");
+                if(proceduresHeaderNode != null)
                 {
-                    var currentNode = proceduresHeaderNode.NextSibling;
-                    while (currentNode != null && !(currentNode.Name == "p" && currentNode.InnerText.Contains("Descrição:")))
+                    //Criando uma lista de procedimentos
+                    List<string> containmentProcedures= new List<string>();
+
+                    //ADicionar o primeiro parágrafo (cabeçalho) sem o texto "Procedimentos de contenção"
+                    containmentProcedures.Add(proceduresHeaderNode.InnerText.Replace("Procedimentos Especiais de Contenção", "").Trim());
+
+                    //Selecionar todos os nós seguintes até encontrar outro cabeçalho ou fim do conteúdo
+                    var nextSibling = proceduresHeaderNode.NextSibling;
+                    while (nextSibling != null && nextSibling.Name != "strong" )
                     {
-                        if (currentNode.Name == "p")
+                        // Verificar se o nó atual é um parágrafo e contém a tag <strong> com o texto "Descrição"
+                        if (nextSibling.Name == "p" && nextSibling.SelectSingleNode(".//strong[contains(text(),'Descrição')]") != null)
                         {
-                            itemScp.ContainmentProcedures += currentNode.InnerText + "\n";
+                            break;
                         }
-                        currentNode = currentNode.NextSibling;
+                        if(nextSibling.Name == "p" || nextSibling.Name == "#text")
+                        {
+                            containmentProcedures.Add((string)nextSibling.InnerText.Trim());
+                        }
+                        nextSibling = nextSibling.NextSibling;
                     }
+                    // Combinar todos os parágrafos em uma única string
+                    itemScp.ContainmentProcedures = string.Join(Environment.NewLine, containmentProcedures);
+                    //itemScp.ContainmentProcedures = proceduresHeaderNode.InnerText.Replace("Procedimentos Especiais de Contenção", "");
+                }
+
+                var itemDescription = pageContentNode.SelectSingleNode(".//p[strong[contains(text(),'Descrição')]]");
+                if (itemDescription != null)
+                {
+                    List<string> descriptions = new List<string>();
+                    itemScp.Description = itemDescription.InnerText.Replace("Descrição", "");
+
+                    //selecionar todos os nós seguintes até encontrar outro cabeçalho ou acabar
+                    var nextSibling = itemDescription.NextSibling;
+                    while (nextSibling != null && nextSibling.Name != "div")
+                    {
+                        // Verificar se o nó atual é um parágrafo sem tag <strong> dentro dele
+                        if (nextSibling.Name == "p" && nextSibling.SelectSingleNode(".//strong") == null)
+                        {
+                            descriptions.Add((string)nextSibling.InnerText.Trim());
+                        }
+                      else if (nextSibling.Name == "p" || nextSibling.SelectSingleNode(".//strong") != null)
+                        {
+                            break;
+                        }
+                        nextSibling = nextSibling.NextSibling;
+                    }
+                    itemScp.Description = string.Join(Environment.NewLine, descriptions);
                 }
                 scpItems.Add(itemScp);
                 foreach (var scp in scpItems)
@@ -65,6 +104,7 @@ namespace StaticWebScraping
                     Console.WriteLine("Item Number: " + scp.ItemNumber);
                     Console.WriteLine("Classe do Objeto: " + scp.ObjectClass);
                     Console.WriteLine("Procedimentos Especiais de Contenção: " + scp.ContainmentProcedures);
+                    Console.WriteLine("Procedimentos Especiais de Contenção: " + scp.Description);
                     // Você pode adicionar mais exibições aqui para ObjectClass, ContainmentProcedures e Description se necessário
                 }
 
