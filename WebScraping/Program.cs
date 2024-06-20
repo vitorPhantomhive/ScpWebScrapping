@@ -1,5 +1,7 @@
 ﻿using HtmlAgilityPack;
 using WebScraping;
+using CsvHelper;
+using System.Globalization;
 
 namespace StaticWebScraping
 {
@@ -99,13 +101,12 @@ namespace StaticWebScraping
                     itemScp.Description = string.Join(Environment.NewLine, descriptions);
                 }
                 scpItems.Add(itemScp);
-                foreach (var scp in scpItems)
+
+                using (var writer = new StreamWriter("outputs.csv"))
+
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
                 {
-                    Console.WriteLine("Item Number: " + scp.ItemNumber);
-                    Console.WriteLine("Classe do Objeto: " + scp.ObjectClass);
-                    Console.WriteLine("Procedimentos Especiais de Contenção: " + scp.ContainmentProcedures);
-                    Console.WriteLine("Procedimentos Especiais de Contenção: " + scp.Description);
-                    // Você pode adicionar mais exibições aqui para ObjectClass, ContainmentProcedures e Description se necessário
+                    csv.WriteRecords(scpItems);
                 }
 
             }
