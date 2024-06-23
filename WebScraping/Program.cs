@@ -1,7 +1,9 @@
 ﻿using HtmlAgilityPack;
 using WebScraping;
+using Newtonsoft.Json;
 using CsvHelper;
 using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace StaticWebScraping
 {
@@ -73,7 +75,7 @@ namespace StaticWebScraping
                         nextSibling = nextSibling.NextSibling;
                     }
                     // Combinar todos os parágrafos em uma única string
-                    itemScp.ContainmentProcedures = string.Join(Environment.NewLine, containmentProcedures);
+                    itemScp.ContainmentProcedures = string.Join("", containmentProcedures).Replace("\r\n", "");
                     //itemScp.ContainmentProcedures = proceduresHeaderNode.InnerText.Replace("Procedimentos Especiais de Contenção", "");
                 }
 
@@ -98,16 +100,19 @@ namespace StaticWebScraping
                         }
                         nextSibling = nextSibling.NextSibling;
                     }
-                    itemScp.Description = string.Join(Environment.NewLine, descriptions);
+                    itemScp.Description = string.Join("", descriptions).Replace("\r\n", "");
                 }
                 scpItems.Add(itemScp);
 
-                using (var writer = new StreamWriter("outputs.csv"))
+                //indicando onde eu quero o caminho do arquivo
+                string path = "C:\\Users\\vitor\\source\\repos\\WebScraping\\WebScraping\\json_scp\\json_scp.json";
 
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-                {
-                    csv.WriteRecords(scpItems);
-                }
+                //trasnformando em json
+                string json = JsonConvert.SerializeObject(scpItems);
+
+                //criando o arquivo
+                File.WriteAllText(path, json);
+
 
             }
         }
