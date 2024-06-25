@@ -1,10 +1,8 @@
 ﻿using HtmlAgilityPack;
 using WebScraping;
 using Newtonsoft.Json;
-using CsvHelper;
-using System.Globalization;
-using System.Text.Json.Serialization;
-using System;
+using System.Net.Http.Json;
+
 
 namespace StaticWebScraping
 {
@@ -12,14 +10,15 @@ namespace StaticWebScraping
     {
         public static async Task Main()
         {
-           await Start();
-           
+            await Start();
+
         }
 
         public static async Task Start()
-        { 
+        {
             //Inicializandoa lista de objetos que armazenará os dados raspados
             List<SCP> scpItems = new List<SCP>();
+            var itemScp = new SCP();
             for (int v = 99; v < 3000; v++)
             {
                 //URL da página alvo
@@ -37,8 +36,8 @@ namespace StaticWebScraping
                     //selecionando o nó html de interesse
                     var pageContentNode = document.DocumentNode.SelectSingleNode("//*[@id='page-content']");
 
-                   
-                    var itemScp = new SCP();
+
+
                     //pegando os valores do html 
                     var itemNumberNode = pageContentNode.SelectSingleNode(".//p[strong[contains(text(),'Item nº')]]");
 
@@ -116,19 +115,30 @@ namespace StaticWebScraping
 
                 }
 
-                
+
                 //indicando onde eu quero o caminho do arquivo
                 string path = "C:\\Users\\vitor\\source\\repos\\WebScraping\\WebScraping\\json_scp\\json_scp.json";
 
                 //trasnformando em json
-                string json = JsonConvert.SerializeObject(scpItems);
+                string json = JsonConvert.SerializeObject(itemScp);
 
                 //criando o arquivo
                 File.WriteAllText(path, json);
 
-                Console.WriteLine($"Números de scps adicionados: " + scpItems.Count);
+
+                string url_api = "https://localhost:7190/api/Scp";
+                HttpClient client_post = new HttpClient();
+                var postResponse = await client_post.PostAsJsonAsync(url_api, itemScp);
+                if (postResponse.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Requisição feita com sucesso para o SCP: {v}");
+                }
+                else
+                {
+                    Console.WriteLine($"Falha na requisição para o SCP: {v}, Status: {postResponse.StatusCode}");
+                }
             }
-            
+
         }
     }
 
